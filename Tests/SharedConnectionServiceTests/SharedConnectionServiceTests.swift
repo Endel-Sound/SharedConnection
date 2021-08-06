@@ -122,6 +122,32 @@ final class SharedConnectionServiceTests: XCTestCase {
         XCTAssertEqual(passMessages, [])
     }
 
+    func testProvidePolicyDropFirst() {
+        manager.provideSharedData(key: key, signal: signal, origin: .both,
+                                  policy: [.dropFirstOnPhone], transform: { $0 })
+            .sink { _ in }
+            .store(in: &cancellables)
+
+        // Send first value
+        signal.send(false)
+
+        // Send first value duplicate
+        signal.send(false)
+
+        // Reachability recovered
+        isCounterpartReachable.send(false)
+        isCounterpartReachable.send(true)
+
+        // All values above should be ignored
+        XCTAssertEqual(sentMessages, [])
+
+        // Send second value
+        signal.send(true)
+
+        // Second value should be sent
+        XCTAssertEqual(sentMessages, [true])
+    }
+
     func testOriginShouldPass() {
         #if os(watchOS)
         let origin: SharedConnectionPolicy.Provide.Origin = .watch

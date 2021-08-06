@@ -25,6 +25,12 @@ public enum SharedConnectionPolicy {
 
         /// Block sent value locally.
         case blockSent
+
+        /// Ignore first value on watch origin.
+        case dropFirstOnWatch
+
+        /// Ignore first value on phone origin.
+        case dropFirstOnPhone
     }
 
     /// Options to apply when new shared data is received.

@@ -129,6 +129,19 @@ extension SharedConnectionManager {
                         .eraseToAnyPublisher()
                 }
                 .switchToLatest()
+                // Apply `dropFirstOnWatch/OnPhone` policy
+                .scan(Optional<(Key.Value?, Key.Value)>.none) { ($0?.1, $1) }
+                .compactMap { $0 }
+                .drop(while: { old, new in
+                    #if os(watchOS)
+                    guard policy.contains(.dropFirstOnWatch) else { return false }
+                    #else
+                    guard policy.contains(.dropFirstOnPhone) else { return false }
+                    #endif
+                    // Wait before second value comes
+                    return old == nil || new == old
+                })
+                .map { $1 }
                 // Don't send values if counterpart is not reachable right now
                 .filter { [weak self] _ in self?.sharedSession.isCounterpartReachable.value == true }
     //            .print("%%% sending shared data for key \(key.identifier)")
