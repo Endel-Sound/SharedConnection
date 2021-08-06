@@ -110,6 +110,8 @@ extension SharedConnectionManager {
             signal
                 // Transform  into intermediate representation
                 .map(transform)
+                // Apply `dropFirstOnWatch/OnPhone` policy
+                .dropFirst(with: policy)
                 // Apply `removeDuplicates` policy
                 .removeDuplicates(by: { (old, new) -> Bool in
                     guard policy.contains(.removeDuplicates) else { return false }
@@ -129,19 +131,6 @@ extension SharedConnectionManager {
                         .eraseToAnyPublisher()
                 }
                 .switchToLatest()
-                // Apply `dropFirstOnWatch/OnPhone` policy
-                .scan(Optional<(Key.Value?, Key.Value)>.none) { ($0?.1, $1) }
-                .compactMap { $0 }
-                .drop(while: { old, new in
-                    #if os(watchOS)
-                    guard policy.contains(.dropFirstOnWatch) else { return false }
-                    #else
-                    guard policy.contains(.dropFirstOnPhone) else { return false }
-                    #endif
-                    // Wait before second value comes
-                    return old == nil || new == old
-                })
-                .map { $1 }
                 // Don't send values if counterpart is not reachable right now
                 .filter { [weak self] _ in self?.sharedSession.isCounterpartReachable.value == true }
     //            .print("%%% sending shared data for key \(key.identifier)")
@@ -206,6 +195,8 @@ extension SharedConnectionManager {
             })
             .store(in: &bag)
 
+        // On reachability restore we need to send last value (can be received or provided)
+        // Can't be used restore logic from `provide` method because of this (which resend only latest provided value)
         let lastValueOnReachable: AnyPublisher<Key.Value, Never> = watchDidBecomeReachable
             .map { lastValue.first().eraseToAnyPublisher() }
             .switchToLatest()
@@ -214,6 +205,8 @@ extension SharedConnectionManager {
 
         let provideChangedDataSignal = signal
             .map { transform($0) }
+            // Apply `dropFirstOnWatch/OnPhone` policy
+            .dropFirst(with: providePolicy)
             .flatMap { newValue in
                 lastValue.first()
                     .map { (newValue, $0) }
@@ -239,8 +232,11 @@ extension SharedConnectionManager {
         let provideSignal = provideSharedData(key: key,
                           signal: provideChangedDataSignal,
                           origin: origin,
-                          // Use `.ignoreReachability` - because resend values already handled in `provideChangedDataSignal`
-                          policy: providePolicy.union([.ignoreReachability]),
+                          policy: providePolicy
+                            // Use `.ignoreReachability` - because resend values already handled in `provideChangedDataSignal`
+                            .union([.ignoreReachability])
+                            // Disable `dropFirst` policy because already handled in `provideChangedDataSignal`
+                            .subtracting([.dropFirstOnPhone, .dropFirstOnWatch]),
                           transform: { $0 })
             .eraseToAnyPublisher()
 
@@ -269,5 +265,19 @@ private extension SharedConnectionManager {
         #else
         return Empty(completeImmediately: false).eraseToAnyPublisher()
         #endif
+    }
+}
+
+private extension Publisher {
+    /// Apply `dropFirstOnWatch/OnPhone` policy.
+    func dropFirst(with policy: Set<SharedConnectionPolicy.Provide>) -> Publishers.Drop<Self> {
+        // Compute drop count for `dropFirstOnWatch/OnPhone` policy
+        #if os(watchOS)
+        let dropFirstCount = policy.contains(.dropFirstOnWatch) ? 1 : 0
+        #else
+        let dropFirstCount = policy.contains(.dropFirstOnPhone) ? 1 : 0
+        #endif
+
+        return self.dropFirst(dropFirstCount)
     }
 }

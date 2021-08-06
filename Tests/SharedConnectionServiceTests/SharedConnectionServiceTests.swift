@@ -131,9 +131,6 @@ final class SharedConnectionServiceTests: XCTestCase {
         // Send first value
         signal.send(false)
 
-        // Send first value duplicate
-        signal.send(false)
-
         // Reachability recovered
         isCounterpartReachable.send(false)
         isCounterpartReachable.send(true)
@@ -142,10 +139,10 @@ final class SharedConnectionServiceTests: XCTestCase {
         XCTAssertEqual(sentMessages, [])
 
         // Send second value
-        signal.send(true)
+        signal.send(false)
 
         // Second value should be sent
-        XCTAssertEqual(sentMessages, [true])
+        XCTAssertEqual(sentMessages, [false])
     }
 
     func testOriginShouldPass() {
@@ -236,6 +233,36 @@ final class SharedConnectionServiceTests: XCTestCase {
 
         // Try to send latest value
         XCTAssertEqual(sentMessages, [true])
+    }
+
+    func testSyncPolicyDropFirst() {
+        manager.syncSharedData(key: key, signal: signal, origin: .both, receivePolicy: [],
+                               providePolicy: [.dropFirstOnPhone], transform: { $0 })
+            .sink { _ in }
+            .store(in: &cancellables)
+
+        // Send first value
+        signal.send(false)
+
+        // Reachability recovered
+        isCounterpartReachable.send(false)
+        isCounterpartReachable.send(true)
+
+        // Reachability recovered
+        isCounterpartReachable.send(false)
+        isCounterpartReachable.send(true)
+
+        // Value should be ignored
+        XCTAssertEqual(sentMessages, [])
+
+        // Simulate value received from companion
+        receivedMessage.send(SharedValue(key: key, value: true)!.sharedData)
+
+        // Send first value duplicate
+        signal.send(false)
+
+        // Value should be sent
+        XCTAssertEqual(sentMessages, [false])
     }
 }
 
