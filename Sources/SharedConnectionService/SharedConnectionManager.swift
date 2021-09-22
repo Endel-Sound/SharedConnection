@@ -101,13 +101,16 @@ extension SharedConnectionManager {
     {
         var bag: Set<AnyCancellable> = []
 
+        // Shared signal used to avoid subscribe multiple times
+        let sharedSignal = signal.share()
+
         if
             // If Session is not supported, don't try to send any values
             sharedSession.isSupported,
             // Handle origin policy
             origin.shouldProvideValue
         {
-            signal
+            sharedSignal
                 // Transform  into intermediate representation
                 .map(transform)
                 // Apply `dropFirstOnWatch/OnPhone` policy
@@ -145,7 +148,7 @@ extension SharedConnectionManager {
                 .store(in: &bag)
         }
 
-        return signal
+        return sharedSignal
             // Apply `blockSent` policy
             .map { value -> AnyPublisher<Element, Never> in
                 if policy.contains(.blockSent) { return Empty(completeImmediately: false).eraseToAnyPublisher() }
