@@ -189,22 +189,9 @@ extension SharedConnectionManager {
 
         guard origin.shouldProvideValue else { return receiveSignal.eraseToAnyPublisher() }
 
-        var bag: Set<AnyCancellable> = []
-
         // Handle provided values
 
-        let latestProvidedValue: CurrentValueSubject<Key.Value?, Never> = .init(nil)
-
         let lastValue: CurrentValueSubject<Key.Value?, Never> = .init(nil)
-
-        receiveSignal
-            .map { Optional($0) }
-            .merge(with: latestProvidedValue)
-            .prepend(nil)
-            .sink(receiveValue: {
-                lastValue.send($0)
-            })
-            .store(in: &bag)
 
         // On reachability restore we need to send last value (can be received or provided)
         // Can't be used restore logic from `provide` method because of this (which resend only latest provided value)
@@ -228,7 +215,7 @@ extension SharedConnectionManager {
                 newValue != oldValue ? newValue : nil
             }
             .handleEvents(receiveOutput: {
-                latestProvidedValue.send(Optional($0))
+                lastValue.send(Optional($0))
             })
             // Force provide last value on reachability changed
             .map { newValue -> AnyPublisher<Key.Value, Never>  in
@@ -254,10 +241,10 @@ extension SharedConnectionManager {
         // Return received and provides values
 
         return receiveSignal
-            .merge(with: provideSignal)
-            .handleEvents(receiveCancel: {
-                bag = []
+            .handleEvents(receiveOutput: {
+                lastValue.send($0)
             })
+            .merge(with: provideSignal)
             .eraseToAnyPublisher()
     }
 }
