@@ -135,7 +135,13 @@ extension SharedConnectionManager {
                 }
                 .switchToLatest()
                 // Don't send values if counterpart is not reachable right now
-                .filter { [weak self] _ in self?.sharedSession.isCounterpartReachable.value == true }
+                .flatMap { [weak self] newValue -> AnyPublisher<Key.Value, Never> in
+                    guard let self = self else { return Empty().eraseToAnyPublisher() }
+                    return self.sharedSession.isCounterpartReachable
+                        .first()
+                        .compactMap { $0 ? newValue : nil }
+                        .eraseToAnyPublisher()
+                }
     //            .print("%%% sending shared data for key \(key.identifier)")
                 // Encode for WatchConnect transmission and perform send
                 .compactMap { SharedValue(key: key, value: $0) }
