@@ -63,8 +63,19 @@ public final class SharedConnectionManager: SharedConnectionService {
     }
     #endif
 
-    public init(sharedSession: SharedConnectionSession = WatchConnectivitySession.shared) {
+    public init(sharedSession: SharedConnectionSession = SharedConnectionManager.defaultSession) {
         self.sharedSession = sharedSession
+    }
+}
+
+public extension SharedConnectionManager {
+    /// Default session available for the current environment.
+    static var defaultSession: SharedConnectionSession {
+        #if canImport(WatchConnectivity)
+        return WatchConnectivitySession.shared
+        #else
+        return StabSharedConnectionSession()
+        #endif
     }
 }
 

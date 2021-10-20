@@ -8,7 +8,6 @@
 
 import Foundation
 import Combine
-import WatchConnectivity
 
 public protocol SharedConnectionSession {
     #if os(iOS)
@@ -23,6 +22,10 @@ public protocol SharedConnectionSession {
 
     func send(sharedData: SharedData)
 }
+
+#if canImport(WatchConnectivity)
+
+import WatchConnectivity
 
 public class WatchConnectivitySession: NSObject, SharedConnectionSession {
 
@@ -217,4 +220,19 @@ public extension WatchConnectivitySession {
             self.cachedFileNamePrefix = cachedFileNamePrefix
         }
     }
+}
+
+#endif
+
+/// Shared Connection session without actual implementation.
+public class StabSharedConnectionSession: SharedConnectionSession {
+    #if os(iOS)
+    public var isPaired: Bool? = false
+    #endif
+    
+    public var isSupported: Bool = false
+    public var isCounterpartReachable: CurrentValueSubject<Bool, Never> = .init(false)
+    public var receivedMessage: PassthroughSubject<SharedData, Never> = .init()
+    
+    public func send(sharedData: SharedData) { return }
 }

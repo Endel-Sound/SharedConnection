@@ -155,12 +155,14 @@ public extension Publisher where Failure == Never {
                               transform: { $0 })
     }
 }
+
 #else
+
 // For platforms where watch communication is not available, receive and send shared data operators simply relay incoming events.
 public extension Publisher where Failure == Never {
     /// Observe shared data update for specified key.
     /// - parameter key: Key describing expected values.
-    /// - parameter policy: Additional modificators applied to received data.
+    /// - parameter policy: Additional modifiators applied to received data.
     /// - parameter transform: Closure to perform necessary transformations from shared communication DTO type to expected signal element.
     ///
     /// - returns: Combined signal of upstream elements merged with elements received from the counterpart app.
@@ -171,7 +173,7 @@ public extension Publisher where Failure == Never {
         policy: Set<SharedConnectionPolicy.Receive> = [],
         transform: @escaping (Key.Value) -> Output) -> AnyPublisher<Output, Failure>
     {
-        return self
+        return AnyPublisher(self)
     }
 
     /// Observe shared data update for specified key.
@@ -185,7 +187,7 @@ public extension Publisher where Failure == Never {
         key: Key,
         policy: Set<SharedConnectionPolicy.Receive> = []) -> AnyPublisher<Output, Failure> where Key.Value == Output
     {
-        return self
+        return AnyPublisher(self)
     }
 
     /// Send shared data updates for specified key.
@@ -203,7 +205,7 @@ public extension Publisher where Failure == Never {
         policy: Set<SharedConnectionPolicy.Provide> = [],
         transform: @escaping (Output) -> Key.Value) -> AnyPublisher<Output, Failure>
     {
-        return self
+        return AnyPublisher(self)
     }
 
     /// Send shared data updates for specified key.
@@ -219,7 +221,8 @@ public extension Publisher where Failure == Never {
         origin: SharedConnectionPolicy.Provide.Origin,
         policy: Set<SharedConnectionPolicy.Provide> = []) -> AnyPublisher<Output, Failure> where Key.Value == Output
     {
-        return self
+        return AnyPublisher(self)
     }
 }
+
 #endif
