@@ -8,8 +8,6 @@
 
 import Combine
 
-#if canImport(WatchConnectivity)
-
 /// Additional options for shared data communication.
 public enum SharedConnectionPolicy {
     /// Options to apply to data to be sent.
@@ -144,5 +142,3 @@ public protocol SharedConnectionService {
         transform: @escaping (Element) -> Key.Value
     ) -> AnyPublisher<Key.Value, Never> where Signal.Output == Element, Signal.Failure == Never
 }
-
-#endif
