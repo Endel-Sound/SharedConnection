@@ -10,8 +10,6 @@ import ReactiveKit
 import Combine
 import SharedConnectionService
 
-#if canImport(WatchConnectivity)
-
 public extension Signal where Error == Never {
     /// Shorthand method for creating a signal that emits values received from shared data.
     /// - parameter sharedConnectionService: Communication manager instance responsible for receiving data
@@ -157,71 +155,3 @@ public extension SignalProtocol where Error == Never {
                               transform: { $0 })
     }
 }
-#else
-// For platforms where watch communication is not available, receive and send shared data operators simply relay incoming events.
-public extension SignalProtocol where Error == Never {
-    /// Observe shared data update for specified key.
-    /// - parameter key: Key describing expected values.
-    /// - parameter policy: Additional modificators applied to received data.
-    /// - parameter transform: Closure to perform necessary transformations from shared communication DTO type to expected signal element.
-    ///
-    /// - returns: Combined signal of upstream elements merged with elements received from the counterpart app.
-    ///
-    /// - important: This implementation has no effect. It simply passes through upstream signal values downstream.
-    func receiveSharedData<Key: SharedStateKeyProtocol>(
-        key: Key,
-        policy: Set<SharedConnectionPolicy.Receive> = [],
-        transform: @escaping (Key.Value) -> Element) -> Signal<Element, Error>
-    {
-        return self.toSignal()
-    }
-
-    /// Observe shared data update for specified key.
-    /// - parameter key: Key describing expected values.
-    /// - parameter policy: Additional modificators applied to received data.
-    ///
-    /// - returns: Combined signal of upstream elements merged with elements received from the counterpart app.
-    ///
-    /// - important: This implementation has no effect. It simply passes through upstream signal values downstream.
-    func receiveSharedData<Key: SharedStateKeyProtocol>(
-        key: Key,
-        policy: Set<SharedConnectionPolicy.Receive> = []) -> Signal<Element, Error> where Key.Value == Element
-    {
-        return self.toSignal()
-    }
-
-    /// Send shared data updates for specified key.
-    /// - parameter key: Key describing values being sent through the communication interface.
-    /// - parameter origin: Determines wheter to send data depending on running platform.
-    /// - parameter policy: Additional modificators applied to data to be sent.
-    /// - parameter transform: Closure to perform necessary transformations from upstream signal element to shared communication DTO object.
-    ///
-    /// - returns: Unaltered upstream signal.
-    ///
-    /// - important: This implementation has no effect. It simply passes through upstream signal values downstream.
-    func provideSharedData<Key: SharedStateKeyProtocol>(
-        key: Key,
-        origin: SharedConnectionPolicy.Provide.Origin,
-        policy: Set<SharedConnectionPolicy.Provide> = [],
-        transform: @escaping (Element) -> Key.Value) -> Signal<Element, Error>
-    {
-        return self.toSignal()
-    }
-
-    /// Send shared data updates for specified key.
-    /// - parameter key: Key describing values being sent through the communication interface.
-    /// - parameter origin: Determines wheter to send data depending on running platform.
-    /// - parameter policy: Additional modificators applied to data to be sent.
-    ///
-    /// - returns: Unaltered upstream signal.
-    ///
-    /// - important: This implementation has no effect. It simply passes through upstream signal values downstream.
-    func provideSharedData<Key: SharedStateKeyProtocol>(
-        key: Key,
-        origin: SharedConnectionPolicy.Provide.Origin,
-        policy: Set<SharedConnectionPolicy.Provide> = []) -> Signal<Element, Error> where Key.Value == Element
-    {
-        return self.toSignal()
-    }
-}
-#endif
