@@ -55,13 +55,7 @@ public final class SharedConnectionManager: SharedConnectionService {
 
     public static let shared = SharedConnectionManager()
 
-    private let sharedSession: SharedConnectionSession
-
-    #if os(iOS)
-    public var isPaired: Bool? {
-        sharedSession.isPaired
-    }
-    #endif
+    public let sharedSession: SharedConnectionSession
 
     public init(sharedSession: SharedConnectionSession = SharedConnectionManager.defaultSession) {
         self.sharedSession = sharedSession

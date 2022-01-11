@@ -92,10 +92,8 @@ public struct SharedStateKey<T: Codable & Equatable>: SharedStateKeyProtocol {
 }
 
 public protocol SharedConnectionService {
-    #if os(iOS)
-    /// I whether the current iPhone is paired to an Apple Watch
-    var isPaired: Bool? { get }
-    #endif
+    /// Current connection session.
+    var sharedSession: SharedConnectionSession { get }
 
     /// Receive updates whenever new update for shared value occurs.
     /// - parameter key: Type of key describing expected values.
